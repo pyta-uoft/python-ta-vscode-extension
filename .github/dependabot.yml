@@ -4,25 +4,16 @@ updates:
     directory: /
     schedule:
       interval: monthly
-    labels:
-      - 'no-changelog'
 
-  - package-ecosystem: 'pip'
+  - package-ecosystem: 'uv'
     directory: /
     schedule:
-      interval: daily
-    labels:
-      - 'debt'
-    commit-message:
-      include: 'scope'
-      prefix: 'pip'
+      interval: monthly
 
   - package-ecosystem: 'npm'
     directory: /
     schedule:
       interval: monthly
-    labels:
-      - 'no-changelog'
     ignore:
       - dependency-name: '@types/vscode'
       - dependency-name: '@types/node'
