@@ -61,10 +61,9 @@ NOTEBOOK_SYNC_OPTIONS = lsp.NotebookDocumentSyncOptions(
     ],
     save=True,
 )
-# TODO: Update the language server name and version.
-LSP_SERVER = server.LanguageServer(
-    name="<pytool-display-name>",
-    version="<server version>",
+LSP_SERVER = LanguageServer(
+    name="PythonTA VS Code Extension",
+    version="0.1.0",
     max_workers=MAX_WORKERS,
     notebook_document_sync=NOTEBOOK_SYNC_OPTIONS,
 )
@@ -83,16 +82,10 @@ LSP_SERVER = server.LanguageServer(
 #  Black: https://github.com/microsoft/vscode-black-formatter/blob/main/bundled/tool
 #  isort: https://github.com/microsoft/vscode-isort/blob/main/bundled/tool
 
-# TODO: Update TOOL_MODULE with the module name for your tool.
-# e.g, TOOL_MODULE = "pylint"
-TOOL_MODULE = "<pytool-module>"
+TOOL_MODULE = "python-ta"
 
-# TODO: Update TOOL_DISPLAY with a display name for your tool.
-# e.g, TOOL_DISPLAY = "Pylint"
-TOOL_DISPLAY = "<pytool-display-name>"
+TOOL_DISPLAY = "PythonTA"
 
-# TODO: Update TOOL_ARGS with default argument you have to pass to your tool in
-# all scenarios.
 TOOL_ARGS = []  # default arguments always passed to your tool.
 
 
@@ -657,7 +650,7 @@ def _run_tool_on_document(
         # sys.path and that might not work for this scenario next time around.
         with utils.substitute_attr(sys, "path", sys.path[:]):
             try:
-                # TODO: `utils.run_module` is equivalent to running `python -m <pytool-module>`.
+                # TODO: `utils.run_module` is equivalent to running `python -m <TOOL_MODULE>`.
                 # If your tool supports a programmatic API then replace the function below
                 # with code for your tool. You can also use `utils.run_api` helper, which
                 # handles changing working directories, managing io streams, etc.
@@ -740,7 +733,7 @@ def _run_tool(extra_args: Sequence[str]) -> utils.RunResult:
         # sys.path and that might not work for this scenario next time around.
         with utils.substitute_attr(sys, "path", sys.path[:]):
             try:
-                # TODO: `utils.run_module` is equivalent to running `python -m <pytool-module>`.
+                # TODO: `utils.run_module` is equivalent to running `python -m <TOOL_MODULE>`.
                 # If your tool supports a programmatic API then replace the function below
                 # with code for your tool. You can also use `utils.run_api` helper, which
                 # handles changing working directories, managing io streams, etc.

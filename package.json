@@ -1,22 +1,22 @@
 {
-    "name": "<pytool-module>",
-    "displayName": "<pytool-display-name>",
-    "description": "Linting support for python files using `<pytool-module>`.",
-    "version": "2022.0.0-dev",
+    "name": "python-ta",
+    "displayName": "PythonTA VS Code Extension",
+    "description": "Linting support for python files using `python-ta`.",
+    "version": "0.1.0",
     "preview": true,
     "serverInfo": {
-        "name": "<pytool-display-name>",
-        "module": "<pytool-module>"
+        "name": "PythonTA VS Code Extension",
+        "module": "python-ta"
     },
-    "publisher": "<my-publisher>",
+    "publisher": "<david-yz-liu>",
     "license": "MIT",
-    "homepage": "https://github.com/<my-github>/<my-extension-project>",
+    "homepage": "https://github.com/pyta-uoft/python-ta-vscode-extension",
     "repository": {
         "type": "git",
-        "url": "https://github.com/<my-github>/<my-extension-project>.git"
+        "url": "https://github.com/pyta-uoft/python-ta-vscode-extension.git"
     },
     "bugs": {
-        "url": "https://github.com/<my-github>/<my-extension-project>/issues"
+        "url": "https://github.com/pyta-uoft/python-ta-vscode-extension/issues"
     },
     "galleryBanner": {
         "color": "#1e415e",
@@ -24,7 +24,7 @@
     },
     "keywords": [
         "python",
-        "<pytool-module>"
+        "python-ta"
     ],
     "engines": {
         "vscode": "^1.78.0"
@@ -40,7 +40,7 @@
     "capabilities": {
         "virtualWorkspaces": {
             "supported": false,
-            "description": "Virtual Workspaces are not supported with <pytool-display-name>."
+            "description": "Virtual Workspaces are not supported with PythonTA VS Code Extension."
         }
     },
     "activationEvents": [
@@ -51,28 +51,28 @@
     ],
     "main": "./dist/extension.js",
     "scripts": {
-        "vscode:prepublish": "npm run package",
+        "vscode:prepublish": "pnpm run package",
         "compile": "webpack",
         "watch": "webpack --watch",
         "package": "webpack --mode production --devtool source-map --config ./webpack.config.js",
         "compile-tests": "tsc -p . --outDir out",
         "watch-tests": "tsc -p . -w --outDir out",
-        "pretest": "npm run compile-tests && npm run compile && npm run lint",
+        "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
         "lint": "eslint src",
         "format-check": "prettier --check 'src/**/*.ts' 'build/**/*.yml' '.github/**/*.yml'",
         "test": "node ./out/test/runTest.js",
-        "vsce-package": "vsce package -o <pytool-module>.vsix"
+        "vsce-package": "vsce package -o python-ta.vsix"
     },
     "contributes": {
         "configuration": {
             "properties": {
-                "<pytool-module>.cwd": {
+                "python-ta.cwd": {
                     "default": "${workspaceFolder}",
-                    "description": "Sets the working directory for <pytool-module>. Supported variables: `${workspaceFolder}` (workspace root) and `${fileDirname}` (directory of the current file).",
+                    "description": "Sets the working directory for python-ta. Supported variables: `${workspaceFolder}` (workspace root) and `${fileDirname}` (directory of the current file).",
                     "scope": "resource",
                     "type": "string"
                 },
-                "<pytool-module>.args": {
+                "python-ta.args": {
                     "default": [],
                     "description": "Arguments passed in. Each argument is a separate item in the array.",
                     "items": {
@@ -81,30 +81,30 @@
                     "scope": "resource",
                     "type": "array"
                 },
-                "<pytool-module>.path": {
+                "python-ta.path": {
                     "default": [],
-                    "description": "When set to a path to <pytool-module> binary, extension will use that. NOTE: Using this option may slowdown server response time.",
+                    "description": "When set to a path to python-ta binary, extension will use that. NOTE: Using this option may slowdown server response time.",
                     "scope": "resource",
                     "items": {
                         "type": "string"
                     },
                     "type": "array"
                 },
-                "<pytool-module>.importStrategy": {
+                "python-ta.importStrategy": {
                     "default": "useBundled",
-                    "description": "Defines where `<pytool-module>` is imported from. This setting may be ignored if `<pytool-module>.path` is set.",
+                    "description": "Defines where `python-ta` is imported from. This setting may be ignored if `python-ta.path` is set.",
                     "enum": [
                         "useBundled",
                         "fromEnvironment"
                     ],
                     "enumDescriptions": [
-                        "Always use the bundled version of `<pytool-module>`.",
-                        "Use `<pytool-module>` from environment, fallback to bundled version only if `<pytool-module>` not available in the environment."
+                        "Always use the bundled version of `python-ta`.",
+                        "Use `python-ta` from environment, fallback to bundled version only if `python-ta` not available in the environment."
                     ],
                     "scope": "window",
                     "type": "string"
                 },
-                "<pytool-module>.interpreter": {
+                "python-ta.interpreter": {
                     "default": [],
                     "description": "When set to a path to python executable, extension will use that to launch the server and any subprocess.",
                     "scope": "resource",
@@ -113,7 +113,7 @@
                     },
                     "type": "array"
                 },
-                "<pytool-module>.showNotifications": {
+                "python-ta.showNotifications": {
                     "default": "off",
                     "description": "Controls when notifications are shown by this extension.",
                     "enum": [
@@ -136,8 +136,8 @@
         "commands": [
             {
                 "title": "Restart Server",
-                "category": "<pytool-display-name>",
-                "command": "<pytool-module>.restart"
+                "category": "PythonTA VS Code Extension",
+                "command": "python-ta.restart"
             }
         ]
     },
@@ -145,6 +145,7 @@
         "@vscode/python-environments": "^1.0.0",
         "@vscode/python-extension": "^1.0.6",
         "fs-extra": "^11.3.5",
+        "vscode-jsonrpc": "^8.1.0",
         "vscode-languageclient": "^8.1.0"
     },
     "devDependencies": {
