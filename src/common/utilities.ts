@@ -1,6 +1,3 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { LogLevel, Uri, WorkspaceFolder } from 'vscode';

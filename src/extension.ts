@@ -1,6 +1,3 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-
 import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
 import { registerLogger, traceError, traceLog, traceVerbose } from './common/log/logging';

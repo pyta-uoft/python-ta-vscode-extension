@@ -1,5 +1,3 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the MIT License.
 """Unit tests for the change_cwd() context manager in lsp_utils."""
 
 import logging
