@@ -1,0 +1,19 @@
+[project]
+name = "python-ta-vscode-extension"
+version = "0.1.0"
+description = "VS Code extension for PythonTA"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pygls>=2.1.1",
+    "python-ta",
+]
+
+[dependency-groups]
+dev = [
+    "colorama",
+    "nox>=2026.4.10",
+    "pytest",
+    "PyHamcrest",
+    "python-jsonrpc-server"
+]

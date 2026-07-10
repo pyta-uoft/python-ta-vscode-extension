@@ -1,5 +1,3 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the MIT License.
 """
 Runner to use when running under a different interpreter.
 """
@@ -51,7 +49,7 @@ while not EXIT_NOW:
         # next time around.
         with utils.substitute_attr(sys, "path", sys.path[:]):
             try:
-                # TODO: `utils.run_module` is equivalent to running `python -m <pytool-module>`.
+                # TODO: `utils.run_module` is equivalent to running `python -m <TOOL_MODULE>`.
                 # If your tool supports a programmatic API then replace the function below
                 # with code for your tool. You can also use `utils.run_api` helper, which
                 # handles changing working directories, managing io streams, etc.
