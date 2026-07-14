@@ -24,6 +24,34 @@ let restartTimer: NodeJS.Timeout | undefined;
 
 let diagnosticCollection: vscode.DiagnosticCollection;
 let statusBarItem: vscode.StatusBarItem;
+const serverId = 'python-ta';
+
+interface LspRange {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+}
+
+interface LspDiagnostic {
+    range: LspRange;
+    message: string;
+    severity: number;
+    code?: string;
+    source?: string;
+}
+
+interface PublishDiagnosticsParams {
+    uri: string;
+    diagnostics: LspDiagnostic[];
+}
+
+function lspSeverityToVscode(severity: number): vscode.DiagnosticSeverity {
+    switch (severity) {
+        case 1: return vscode.DiagnosticSeverity.Error;
+        case 3: return vscode.DiagnosticSeverity.Information;
+        case 4: return vscode.DiagnosticSeverity.Hint;
+        default: return vscode.DiagnosticSeverity.Warning;
+    }
+}
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     // This is required to get server name and module. This should be
@@ -162,8 +190,7 @@ async function runPythonTA(): Promise<void> {
     const settingsInterpreter = getInterpreterFromSetting(serverId);
     if (settingsInterpreter && settingsInterpreter.length > 0) {
         pythonPath = settingsInterpreter[0];
-    } 
-    else {
+    } else {
         const interpreterDetails = await getInterpreterDetails(editor.document.uri);
         if (interpreterDetails.path && interpreterDetails.path.length > 0) {
             pythonPath = interpreterDetails.path[0];
@@ -181,7 +208,12 @@ async function runPythonTA(): Promise<void> {
         delete env.PYTHONHOME;
     }
 
+    const configPath = vscode.workspace.getConfiguration('python-ta').get<string>('configPath');
     const args = ['-m', 'python_ta', '--output-format', 'pyta-lsp', filePath];
+    
+    if (configPath) {
+        args.push('--config', configPath);
+    }
 
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
     const cwd = workspaceFolder ? workspaceFolder.uri.fsPath : undefined;
@@ -214,9 +246,9 @@ async function runPythonTA(): Promise<void> {
             return;
         }
 
-        let results: any[];
+        let results: PublishDiagnosticsParams[];
         try {
-            results = JSON.parse(stdout);
+            results = JSON.parse(stdout) as PublishDiagnosticsParams[];
         } catch {
             if (stdout.includes('[INFO] Your PythonTA report is being opened')) {
                 vscode.window.showInformationMessage('PythonTA generated a web report instead of LSP data.');
@@ -230,17 +262,14 @@ async function runPythonTA(): Promise<void> {
 
         diagnosticCollection.set(editor.document.uri, []); 
         for (const { uri, diagnostics } of results) {
-            const vscodeDiags = diagnostics.map((d: any) => {
+            const vscodeDiags = diagnostics.map((d) => {
                 const diag = new vscode.Diagnostic(
                     new vscode.Range(
                         d.range.start.line, d.range.start.character,
                         d.range.end.line, d.range.end.character
                     ),
                     d.message,
-                    d.severity === 1 ? vscode.DiagnosticSeverity.Error : 
-                    d.severity === 2 ? vscode.DiagnosticSeverity.Warning : 
-                    d.severity === 3 ? vscode.DiagnosticSeverity.Information : 
-                    vscode.DiagnosticSeverity.Hint
+                    lspSeverityToVscode(d.severity)
                 );
                 diag.code = d.code;
                 diag.source = d.source ?? 'python-ta';
