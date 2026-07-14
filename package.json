@@ -64,6 +64,13 @@
         "vsce-package": "vsce package -o python-ta.vsix"
     },
     "contributes": {
+        "keybindings": [
+            {
+                "command": "python-ta.check",
+                "key": "ctrl+shift+t",
+                "when": "editorTextFocus && editorLangId == 'python'"
+            }
+        ],
         "configuration": {
             "properties": {
                 "python-ta.cwd": {
@@ -138,6 +145,11 @@
                 "title": "Restart Server",
                 "category": "PythonTA VS Code Extension",
                 "command": "python-ta.restart"
+            },
+            {
+                "title": "Run PythonTA",
+                "category": "PythonTA VS Code Extension",
+                "command": "python-ta.check"
             }
         ]
     },
