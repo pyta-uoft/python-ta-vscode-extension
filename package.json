@@ -64,8 +64,21 @@
         "vsce-package": "vsce package -o python-ta.vsix"
     },
     "contributes": {
+        "keybindings": [
+            {
+                "command": "python-ta.check",
+                "key": "ctrl+shift+t",
+                "when": "editorTextFocus && editorLangId == 'python'"
+            }
+        ],
         "configuration": {
             "properties": {
+                "python-ta.configPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Absolute or relative path to your PythonTA configuration file (e.g., .pyta_config.ini).",
+                    "scope": "resource"
+                },
                 "python-ta.cwd": {
                     "default": "${workspaceFolder}",
                     "description": "Sets the working directory for python-ta. Supported variables: `${workspaceFolder}` (workspace root) and `${fileDirname}` (directory of the current file).",
@@ -138,6 +151,11 @@
                 "title": "Restart Server",
                 "category": "PythonTA VS Code Extension",
                 "command": "python-ta.restart"
+            },
+            {
+                "title": "Run PythonTA",
+                "category": "PythonTA VS Code Extension",
+                "command": "python-ta.check"
             }
         ]
     },
