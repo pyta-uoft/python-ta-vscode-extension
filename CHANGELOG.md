@@ -8,6 +8,8 @@
 
 ### ✨ New features and improvements
 
+- Implement initial PythonTA LSP server
+
 ### 🐛 Bug fixes
 
 ### 🔧 Internal changes

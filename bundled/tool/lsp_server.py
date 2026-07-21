@@ -80,7 +80,6 @@ LSP_SERVER = LanguageServer(
 #  Black: https://github.com/microsoft/vscode-black-formatter/blob/main/bundled/tool
 #  isort: https://github.com/microsoft/vscode-isort/blob/main/bundled/tool
 
-# TOOL_MODULE = "python-ta"
 TOOL_MODULE = "python_ta"
 
 TOOL_DISPLAY = "PythonTA"
