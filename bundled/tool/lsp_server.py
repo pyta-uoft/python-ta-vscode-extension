@@ -37,6 +37,7 @@ update_sys_path(
 # pylint: disable=wrong-import-position,import-error
 import lsp_jsonrpc as jsonrpc
 import lsp_utils as utils
+from lsprotocol import converters
 from lsprotocol import types as lsp
 from pygls import uris, workspace
 from pygls.lsp.server import LanguageServer
@@ -230,6 +231,7 @@ def _get_document_path(document: workspace.Document) -> str:
         return uris.to_fs_path(file_uri)
     return uris.to_fs_path(document.uri)
 
+
 def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
     # TODO: Determine if your tool supports passing file content via stdin.
     # If you want to support linting on change then your tool will need to
@@ -240,47 +242,27 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
         return _parse_json_output(result.stdout, document.uri)
     return []
 
+
 def _parse_json_output(content: str, doc_uri: str) -> list[lsp.Diagnostic]:
     """Parses PythonTA's JSON output and maps it to LSP Diagnostics."""
-    diagnostics: list[lsp.Diagnostic] = []
-    try:
-        # Strip initial output
-        json_start = content.find("[")
-        if json_start != -1:
-            content = content[json_start:]
+    json_start = content.find("[")
+    if json_start == -1:
+        return []
+    content = content[json_start:]
 
-        results = json.loads(content)
-        for file_result in results:
-            if file_result.get("uri") == doc_uri:
-                for d in file_result.get("diagnostics", []):
-                    start = lsp.Position(
-                        line=d["range"]["start"]["line"],
-                        character=d["range"]["start"]["character"]
-                    )
-                    end = lsp.Position(
-                        line=d["range"]["end"]["line"],
-                        character=d["range"]["end"]["character"]
-                    )
-                    raw_severity = d.get("severity", 3)
-                    severity_enum = lsp.DiagnosticSeverity(raw_severity)
-                    
-                    diagnostic = lsp.Diagnostic(
-                        range=lsp.Range(start=start, end=end),
-                        message=d.get("message", ""),
-                        severity=severity_enum, 
-                        code=d.get("code"),
-                        source=d.get("source", TOOL_DISPLAY)
-                    )
-                    diagnostics.append(diagnostic)
-    except json.JSONDecodeError:
-        if "[INFO] Your PythonTA report is being opened in your web browser." in content:
-            log_always("PythonTA generated a web report instead of LSP data.")
-        else:
-            log_error(f"Failed to parse JSON output from PythonTA. Raw output: {content}")
-    except Exception as ex:
-        log_error(f"Error mapping diagnostics: {ex}")
-        
-    return diagnostics
+    raw_results = json.loads(content)
+    diagnostics_data = []
+    for file_result in raw_results:
+        if file_result.get("uri") == doc_uri:
+            diagnostics_data = file_result.get("diagnostics", [])
+            break
+
+    for diag in diagnostics_data:
+        if "severity" in diag and isinstance(diag["severity"], int):
+            diag["severity"] = lsp.DiagnosticSeverity(diag["severity"])
+
+    converter = converters.get_converter()
+    return converter.structure(diagnostics_data, list[lsp.Diagnostic])
 
 
 # **********************************************************
@@ -485,12 +467,7 @@ def _run_tool_on_document(
         python_exe = settings["interpreter"][0]
         if python_exe not in ("python", "python3"):
             python_dir = os.path.dirname(python_exe)
-            venv_dir = os.path.dirname(python_dir)
-            
             os.environ["PATH"] = f"{python_dir}{os.pathsep}{os.environ.get('PATH', '')}"
-            os.environ["VIRTUAL_ENV"] = venv_dir
-            if "PYTHONHOME" in os.environ:
-                del os.environ["PYTHONHOME"]
 
     use_path = False
     use_rpc = False
