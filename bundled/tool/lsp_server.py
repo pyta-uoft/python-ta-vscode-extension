@@ -463,12 +463,6 @@ def _run_tool_on_document(
     # Pass document so get_cwd can resolve file-related variables for this document.
     cwd = get_cwd(settings, document)
 
-    if settings["interpreter"] and len(settings["interpreter"]) > 0:
-        python_exe = settings["interpreter"][0]
-        if python_exe not in ("python", "python3"):
-            python_dir = os.path.dirname(python_exe)
-            os.environ["PATH"] = f"{python_dir}{os.pathsep}{os.environ.get('PATH', '')}"
-
     use_path = False
     use_rpc = False
     if settings["path"]:

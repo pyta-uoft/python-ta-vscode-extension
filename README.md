@@ -16,8 +16,13 @@ This project is an extension for running [PythonTA](https://www.cs.toronto.edu/~
 
 1. Install Python dependencies: `uv sync`.
 2. Install Javascript dependencies: `pnpm install`.
+3. Clone the [`pyta`](https://github.com/pyta-uoft/pyta) repository locally. The most recent release does not include the `pyta-lsp` output format needed for the VSCode extension.
+4. Install the following modules into `bundles/libs`
+```bash
+uv pip install path/to/local/pyta/packages/python-ta pygls --target bundled/libs
+```
 
-To start the extension, use the `Debug Extension and Python` configuration in VS Code.
+To start the extension, use the `Debug Extension and Python` (shortcut `F5`) configuration in VS Code.
 
 ### Running tests
 
