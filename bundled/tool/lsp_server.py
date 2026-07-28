@@ -496,7 +496,6 @@ def _run_tool_on_document(
         # if the interpreter is same as the interpreter running this
         # process then run as module.
         argv = [TOOL_MODULE]
-        use_rpc = False
 
     argv += TOOL_ARGS + settings["args"] + extra_args
 
