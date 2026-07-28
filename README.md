@@ -41,6 +41,10 @@ If you are actively testing the extension using the debugger (`F5`), you may not
 
 If you want to avoid this during testing, and you do not need breakpoints, launch the Extension Development Host using **Debug Extension Only** (via the dropdown in the Run and Debug menu) instead of `F5`.
 
+### Demo Video
+
+<video controls src="media/demo.mp4" title="Title"></video>
+
 ### Running tests
 
 To run the Python tests, run `uv run pytest src/test/python_tests`.
