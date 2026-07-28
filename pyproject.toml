@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "pygls>=2.1.1",
-    "python-ta",
+    "python-ta @ git+https://github.com/pyta-uoft/pyta.git#subdirectory=packages/python-ta",
 ]
 
 [dependency-groups]

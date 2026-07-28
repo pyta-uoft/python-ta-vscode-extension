@@ -253,7 +253,8 @@ def _parse_json_output(content: str, doc_uri: str) -> list[lsp.Diagnostic]:
     raw_results = json.loads(content)
     diagnostics_data = []
     for file_result in raw_results:
-        if file_result.get("uri") == doc_uri:
+        file_uri = file_result.get("uri")
+        if file_uri and _normalize_uri_path(file_uri) == _normalize_uri_path(doc_uri):
             diagnostics_data = file_result.get("diagnostics", [])
             break
 
@@ -263,6 +264,21 @@ def _parse_json_output(content: str, doc_uri: str) -> list[lsp.Diagnostic]:
 
     converter = converters.get_converter()
     return converter.structure(diagnostics_data, list[lsp.Diagnostic])
+
+
+def _normalize_uri_path(uri: str) -> str:
+    """
+    Normalizes a file URI to a comparable filesystem path.
+    On Windows, `pathlib.Path.resolve()` uppercases drive letters, while 
+    VS Code always sends `document.uri` with a lowercase drive letter. 
+    Comparing raw URI strings therefore never matches on Windows.
+    """
+    fs_path = uris.to_fs_path(uri)
+    
+    if fs_path is None:
+        return ""
+        
+    return os.path.normcase(os.path.normpath(fs_path))
 
 
 # **********************************************************
@@ -469,10 +485,18 @@ def _run_tool_on_document(
         # 'path' setting takes priority over everything.
         use_path = True
         argv = settings["path"]
-    else:
-        # Run under subprocess since python_ta calls sys.exit
+    elif settings["interpreter"] and not utils.is_current_interpreter(
+        settings["interpreter"][0]
+    ):
+        # If there is a different interpreter set use JSON-RPC to the subprocess
+        # running under that interpreter.
         argv = [TOOL_MODULE]
         use_rpc = True
+    else:
+        # if the interpreter is same as the interpreter running this
+        # process then run as module.
+        argv = [TOOL_MODULE]
+        use_rpc = False
 
     argv += TOOL_ARGS + settings["args"] + extra_args
 
