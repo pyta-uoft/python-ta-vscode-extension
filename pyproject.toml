@@ -12,7 +12,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "colorama",
-    "nox>=2026.4.10",
+    "nox>=2026.7.11",
     "pytest",
     "PyHamcrest",
     "python-jsonrpc-server"
