@@ -15,11 +15,10 @@ This project is an extension for running [PythonTA](https://www.cs.toronto.edu/~
 ### Setup
 
 1. Install the extension's dependencies into the bundled libraries directory:
-```bash
-uv pip install --target bundled/libs -r pyproject.toml
-```
-2. Install Python dependencies: `uv sync`.
-3. Install Javascript dependencies: `pnpm install`.
+    ```bash
+    uv pip install --target bundled/libs -r pyproject.toml
+    ```
+2. Install Javascript dependencies: `pnpm install`.
 
 ### Testing the Extension Locally
 
@@ -40,10 +39,6 @@ If you are actively testing the extension using the debugger (`F5`), you may not
 **This is expected behavior in the development environment and will not happen in the published extension.** It occurs because the VS Code Extension Development Host wraps the language server in a `debugpy` instance that fails to cleanly release its port when the file reloads.
 
 If you want to avoid this during testing, and you do not need breakpoints, launch the Extension Development Host using **Debug Extension Only** (via the dropdown in the Run and Debug menu) instead of `F5`.
-
-### Demo Video
-
-<video controls src="media/demo.mp4" title="Title"></video>
 
 ### Running tests
 
