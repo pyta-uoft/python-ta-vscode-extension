@@ -15,44 +15,9 @@ import { LS_SERVER_RESTART_DELAY } from './common/constants';
 import { getLSClientTraceLevel } from './common/utilities';
 import { createOutputChannel, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
 
-import { spawn } from 'child_process';
-import * as path from 'path';
-
 let lsClient: LanguageClient | undefined;
 let isRestarting = false;
 let restartTimer: NodeJS.Timeout | undefined;
-
-let diagnosticCollection: vscode.DiagnosticCollection;
-let statusBarItem: vscode.StatusBarItem;
-const serverId = 'python-ta';
-
-interface LspRange {
-    start: { line: number; character: number };
-    end: { line: number; character: number };
-}
-
-interface LspDiagnostic {
-    range: LspRange;
-    message: string;
-    severity: number;
-    code?: string;
-    source?: string;
-}
-
-interface PublishDiagnosticsParams {
-    uri: string;
-    diagnostics: LspDiagnostic[];
-}
-
-function lspSeverityToVscode(severity: number): vscode.DiagnosticSeverity {
-    switch (severity) {
-        case 1: return vscode.DiagnosticSeverity.Error;
-        case 3: return vscode.DiagnosticSeverity.Information;
-        case 4: return vscode.DiagnosticSeverity.Hint;
-        default: return vscode.DiagnosticSeverity.Warning;
-    }
-}
-
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     // This is required to get server name and module. This should be
     // the first thing that we do in this extension.
@@ -78,57 +43,46 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }),
     );
 
-    diagnosticCollection = vscode.languages.createDiagnosticCollection('python-ta');
-    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-    
-    context.subscriptions.push(
-        diagnosticCollection,
-        statusBarItem,
-        vscode.commands.registerCommand(`${serverId}.check`, runPythonTA)
-    );
-
     // Log Server information
     traceLog(`Name: ${serverInfo.name}`);
     traceLog(`Module: ${serverInfo.module}`);
     traceVerbose(`Full Server Info: ${JSON.stringify(serverInfo)}`);
 
     const runServer = async () => {
-        // TODO: Comment back this code when LSP is ready to be implemented
+        if (isRestarting) {
+            if (restartTimer) {
+                clearTimeout(restartTimer);
+            }
+            restartTimer = setTimeout(runServer, LS_SERVER_RESTART_DELAY);
+            return;
+        }
+        isRestarting = true;
+        try {
+            const interpreter = getInterpreterFromSetting(serverId);
+            if (interpreter && interpreter.length > 0) {
+                if (checkVersion(await resolveInterpreter(interpreter))) {
+                    traceVerbose(`Using interpreter from ${serverInfo.module}.interpreter: ${interpreter.join(' ')}`);
+                    lsClient = await restartServer(serverId, serverName, outputChannel, lsClient);
+                }
+                return;
+            }
 
-        // if (isRestarting) {
-        //     if (restartTimer) {
-        //         clearTimeout(restartTimer);
-        //     }
-        //     restartTimer = setTimeout(runServer, LS_SERVER_RESTART_DELAY);
-        //     return;
-        // }
-        // isRestarting = true;
-        // try {
-        //     const interpreter = getInterpreterFromSetting(serverId);
-        //     if (interpreter && interpreter.length > 0) {
-        //         if (checkVersion(await resolveInterpreter(interpreter))) {
-        //             traceVerbose(`Using interpreter from ${serverInfo.module}.interpreter: ${interpreter.join(' ')}`);
-        //             lsClient = await restartServer(serverId, serverName, outputChannel, lsClient);
-        //         }
-        //         return;
-        //     }
+            const interpreterDetails = await getInterpreterDetails();
+            if (interpreterDetails.path) {
+                traceVerbose(`Using interpreter from Python extension: ${interpreterDetails.path.join(' ')}`);
+                lsClient = await restartServer(serverId, serverName, outputChannel, lsClient);
+                return;
+            }
 
-        //     const interpreterDetails = await getInterpreterDetails();
-        //     if (interpreterDetails.path) {
-        //         traceVerbose(`Using interpreter from Python extension: ${interpreterDetails.path.join(' ')}`);
-        //         lsClient = await restartServer(serverId, serverName, outputChannel, lsClient);
-        //         return;
-        //     }
-
-        //     traceError(
-        //         'Python interpreter missing:\r\n' +
-        //             '[Option 1] Select python interpreter using the ms-python.python.\r\n' +
-        //             `[Option 2] Set an interpreter using "${serverId}.interpreter" setting.\r\n` +
-        //             'Please use Python 3.10 or greater.',
-        //     );
-        // } finally {
-        //     isRestarting = false;
-        // }
+            traceError(
+                'Python interpreter missing:\r\n' +
+                    '[Option 1] Select python interpreter using the ms-python.python.\r\n' +
+                    `[Option 2] Set an interpreter using "${serverId}.interpreter" setting.\r\n` +
+                    'Please use Python 3.10 or greater.',
+            );
+        } finally {
+            isRestarting = false;
+        }
     };
 
     context.subscriptions.push(
@@ -165,117 +119,4 @@ export async function deactivate(): Promise<void> {
             traceError(`Server: Stop failed: ${ex}`);
         }
     }
-}
-
-async function runPythonTA(): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor || editor.document.languageId !== 'python') {
-        vscode.window.showWarningMessage('PythonTA: Open a Python file first.');
-        return;
-    }
-
-    if (editor.document.isUntitled) {
-        vscode.window.showWarningMessage('PythonTA: Please save the file before running the linter.');
-        return;
-    }
-
-    const filePath = editor.document.uri.fsPath;
-    
-    statusBarItem.text = '$(loading~spin) Running PythonTA...';
-    statusBarItem.show();
-
-    const serverId = 'python-ta';
-    let pythonPath: string | undefined;
-
-    const settingsInterpreter = getInterpreterFromSetting(serverId);
-    if (settingsInterpreter && settingsInterpreter.length > 0) {
-        pythonPath = settingsInterpreter[0];
-    } else {
-        const interpreterDetails = await getInterpreterDetails(editor.document.uri);
-        if (interpreterDetails.path && interpreterDetails.path.length > 0) {
-            pythonPath = interpreterDetails.path[0];
-        }
-    }
-
-    const python = pythonPath || 'python';
-    
-    const env = Object.assign({}, process.env);
-    if (python !== 'python') {
-        const pythonDir = path.dirname(python);
-        const venvDir = path.dirname(pythonDir);
-        env.PATH = `${pythonDir}${path.delimiter}${env.PATH || ''}`;
-        env.VIRTUAL_ENV = venvDir;
-        delete env.PYTHONHOME;
-    }
-
-    const configPath = vscode.workspace.getConfiguration('python-ta').get<string>('configPath');
-    const args = ['-m', 'python_ta', '--output-format', 'pyta-lsp', filePath];
-    
-    if (configPath) {
-        args.push('--config', configPath);
-    }
-
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
-    const cwd = workspaceFolder ? workspaceFolder.uri.fsPath : undefined;
-
-    const proc = spawn(python, args, { cwd: cwd, env: env });
-    
-    let stdout = '';
-    let stderr = '';
-    let spawnFailed = false;
-
-    proc.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
-    proc.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
-
-    proc.on('error', () => {
-        spawnFailed = true;
-        statusBarItem.hide();
-        vscode.window.showErrorMessage(`PythonTA: Failed to start process. Could not find executable '${python}'.`);
-    });
-
-    proc.on('close', (code: number | null) => {
-        statusBarItem.hide();
-
-        if (spawnFailed) {
-            return;
-        }
-
-        if (code !== 0 && stdout.trim() === '') {
-            const detail = stderr.trim() ? `\nDetails: ${stderr.trim()}` : '';
-            vscode.window.showErrorMessage(`PythonTA: Process failed (exit ${code}).${detail}`);
-            return;
-        }
-
-        let results: PublishDiagnosticsParams[];
-        try {
-            results = JSON.parse(stdout) as PublishDiagnosticsParams[];
-        } catch {
-            if (stdout.includes('[INFO] Your PythonTA report is being opened')) {
-                vscode.window.showInformationMessage('PythonTA generated a web report instead of LSP data.');
-                diagnosticCollection.set(editor.document.uri, []);
-            } else {
-                vscode.window.showErrorMessage('PythonTA: Received non-JSON output.');
-                console.error("Raw Output:", stdout, stderr);
-            }
-            return;
-        }
-
-        diagnosticCollection.set(editor.document.uri, []); 
-        for (const { uri, diagnostics } of results) {
-            const vscodeDiags = diagnostics.map((d) => {
-                const diag = new vscode.Diagnostic(
-                    new vscode.Range(
-                        d.range.start.line, d.range.start.character,
-                        d.range.end.line, d.range.end.character
-                    ),
-                    d.message,
-                    lspSeverityToVscode(d.severity)
-                );
-                diag.code = d.code;
-                diag.source = d.source ?? 'python-ta';
-                return diag;
-            });
-            diagnosticCollection.set(vscode.Uri.parse(uri), vscodeDiags);
-        }
-    });
 }

@@ -37,6 +37,7 @@ update_sys_path(
 # pylint: disable=wrong-import-position,import-error
 import lsp_jsonrpc as jsonrpc
 import lsp_utils as utils
+from lsprotocol import converters
 from lsprotocol import types as lsp
 from pygls import uris, workspace
 from pygls.lsp.server import LanguageServer
@@ -80,12 +81,10 @@ LSP_SERVER = LanguageServer(
 #  Black: https://github.com/microsoft/vscode-black-formatter/blob/main/bundled/tool
 #  isort: https://github.com/microsoft/vscode-isort/blob/main/bundled/tool
 
-TOOL_MODULE = "python-ta"
+TOOL_MODULE = "python_ta"
 
 TOOL_DISPLAY = "PythonTA"
-
-TOOL_ARGS = []  # default arguments always passed to your tool.
-
+TOOL_ARGS = ["--output-format", "pyta-lsp", "--exit-zero"]  # default arguments always passed to your tool
 
 # TODO: If your tool is a linter then update this section.
 # Delete "Linting features" section if your tool is NOT a linter.
@@ -239,140 +238,47 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
     # support linting over stdin to be effective. Read, and update
     # _run_tool_on_document and _run_tool functions as needed for your project.
     result = _run_tool_on_document(document)
-    return _parse_output_using_regex(result.stdout) if result.stdout else []
+    if result and result.stdout:
+        return _parse_json_output(result.stdout, document.uri)
+    return []
 
 
-# TODO: If your linter outputs in a known format like JSON, then parse
-# accordingly. But incase you need to parse the output using RegEx here
-# is a helper you can work with.
-# flake8 example:
-# If you use following format argument with flake8 you can use the regex below to parse it.
-# TOOL_ARGS += ["--format='%(row)d,%(col)d,%(code).1s,%(code)s:%(text)s'"]
-# DIAGNOSTIC_RE =
-#    r"(?P<line>\d+),(?P<column>-?\d+),(?P<type>\w+),(?P<code>\w+\d+):(?P<message>[^\r\n]*)"
-DIAGNOSTIC_RE = re.compile(r"")
+def _parse_json_output(content: str, doc_uri: str) -> list[lsp.Diagnostic]:
+    """Parses PythonTA's JSON output and maps it to LSP Diagnostics."""
+    json_start = content.find("[")
+    if json_start == -1:
+        return []
+    content = content[json_start:]
+
+    raw_results = json.loads(content)
+    diagnostics_data = []
+    for file_result in raw_results:
+        file_uri = file_result.get("uri")
+        if file_uri and _normalize_uri_path(file_uri) == _normalize_uri_path(doc_uri):
+            diagnostics_data = file_result.get("diagnostics", [])
+            break
+
+    for diag in diagnostics_data:
+        if "severity" in diag and isinstance(diag["severity"], int):
+            diag["severity"] = lsp.DiagnosticSeverity(diag["severity"])
+
+    converter = converters.get_converter()
+    return converter.structure(diagnostics_data, list[lsp.Diagnostic])
 
 
-def _parse_output_using_regex(content: str) -> list[lsp.Diagnostic]:
-    lines: list[str] = content.splitlines()
-    diagnostics: list[lsp.Diagnostic] = []
-
-    # TODO: Determine if your linter reports line numbers starting at 1 (True) or 0 (False).
-    line_at_1 = True
-    # TODO: Determine if your linter reports column numbers starting at 1 (True) or 0 (False).
-    column_at_1 = True
-
-    line_offset = 1 if line_at_1 else 0
-    col_offset = 1 if column_at_1 else 0
-    for line in lines:
-        if line.startswith("'") and line.endswith("'"):
-            line = line[1:-1]
-        match = DIAGNOSTIC_RE.match(line)
-        if match:
-            data = match.groupdict()
-            position = lsp.Position(
-                line=max([int(data["line"]) - line_offset, 0]),
-                character=int(data["column"]) - col_offset,
-            )
-            diagnostic = lsp.Diagnostic(
-                range=lsp.Range(
-                    start=position,
-                    end=position,
-                ),
-                message=data.get("message"),
-                severity=_get_severity(data["code"], data["type"]),
-                code=data["code"],
-                source=TOOL_MODULE,
-            )
-            diagnostics.append(diagnostic)
-
-    return diagnostics
-
-
-# TODO: if you want to handle setting specific severity for your linter
-# in a user configurable way, then look at look at how it is implemented
-# for `pylint` extension from our team.
-# Pylint: https://github.com/microsoft/vscode-pylint
-# Follow the flow of severity from the settings in package.json to the server.
-def _get_severity(*_codes: list[str]) -> lsp.DiagnosticSeverity:
-    # TODO: All reported issues from linter are treated as warning.
-    # change it as appropriate for your linter.
-    return lsp.DiagnosticSeverity.Warning
-
-
-# **********************************************************
-# Linting features end here
-# **********************************************************
-
-# TODO: If your tool is a formatter then update this section.
-# Delete "Formatting features" section if your tool is NOT a
-# formatter.
-# **********************************************************
-# Formatting features start here
-# **********************************************************
-#  Sample implementations:
-#  Black: https://github.com/microsoft/vscode-black-formatter/blob/main/bundled/tool
-
-
-@LSP_SERVER.feature(lsp.TEXT_DOCUMENT_FORMATTING)
-def formatting(params: lsp.DocumentFormattingParams) -> list[lsp.TextEdit] | None:
-    """LSP handler for textDocument/formatting request."""
-    # If your tool is a formatter you can use this handler to provide
-    # formatting support on save. You have to return an array of lsp.TextEdit
-    # objects, to provide your formatted results.
-
-    document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
-    edits = _formatting_helper(document)
-    if edits:
-        return edits
-
-    # NOTE: If you provide [] array, VS Code will clear the file of all contents.
-    # To indicate no changes to file return None.
-    return None
-
-
-def _formatting_helper(document: workspace.TextDocument) -> list[lsp.TextEdit] | None:
-    # TODO: For formatting on save support the formatter you use must support
-    # formatting via stdin.
-    # Read, and update_run_tool_on_document and _run_tool functions as needed
-    # for your formatter.
-    result = _run_tool_on_document(document, use_stdin=True)
-    if result.stdout:
-        new_source = _match_line_endings(document, result.stdout)
-        return [
-            lsp.TextEdit(
-                range=lsp.Range(
-                    start=lsp.Position(line=0, character=0),
-                    end=lsp.Position(line=len(document.lines), character=0),
-                ),
-                new_text=new_source,
-            )
-        ]
-    return None
-
-
-def _get_line_endings(lines: list[str]) -> str:
-    """Returns line endings used in the text."""
-    try:
-        if lines[0][-2:] == "\r\n":
-            return "\r\n"
-        return "\n"
-    except Exception:  # pylint: disable=broad-except
-        return None
-
-
-def _match_line_endings(document: workspace.TextDocument, text: str) -> str:
-    """Ensures that the edited text line endings matches the document line endings."""
-    expected = _get_line_endings(document.source.splitlines(keepends=True))
-    actual = _get_line_endings(text.splitlines(keepends=True))
-    if actual == expected or actual is None or expected is None:
-        return text
-    return text.replace(actual, expected)
-
-
-# **********************************************************
-# Formatting features ends here
-# **********************************************************
+def _normalize_uri_path(uri: str) -> str:
+    """
+    Normalizes a file URI to a comparable filesystem path.
+    On Windows, `pathlib.Path.resolve()` uppercases drive letters, while 
+    VS Code always sends `document.uri` with a lowercase drive letter. 
+    Comparing raw URI strings therefore never matches on Windows.
+    """
+    fs_path = uris.to_fs_path(uri)
+    
+    if fs_path is None:
+        return ""
+        
+    return os.path.normcase(os.path.normpath(fs_path))
 
 
 # **********************************************************
