@@ -380,6 +380,7 @@ def _get_global_defaults():
         "args": GLOBAL_SETTINGS.get("args", []),
         "importStrategy": GLOBAL_SETTINGS.get("importStrategy", "useBundled"),
         "showNotifications": GLOBAL_SETTINGS.get("showNotifications", "off"),
+        "configPath": GLOBAL_SETTINGS.get("configPath", ""),
     }
 
 
@@ -498,6 +499,10 @@ def _run_tool_on_document(
         argv = [TOOL_MODULE]
 
     argv += TOOL_ARGS + settings["args"] + extra_args
+
+    config_path = settings.get("configPath")
+    if config_path:
+        argv += ["--config", config_path]
 
     if use_stdin:
         # TODO: update these to pass the appropriate arguments to provide document contents
