@@ -13,4 +13,6 @@
 
 ### 🐛 Bug fixes
 
+- Updated publisher name from `<david-yz-liu>` to `david-yz-liu`
+
 ### 🔧 Internal changes
