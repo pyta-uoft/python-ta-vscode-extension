@@ -16,3 +16,5 @@
 - Updated publisher name from `<david-yz-liu>` to `david-yz-liu`
 
 ### 🔧 Internal changes
+
+- Removed unused `nox` dependency
