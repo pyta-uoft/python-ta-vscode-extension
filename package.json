@@ -8,7 +8,7 @@
         "name": "PythonTA VS Code Extension",
         "module": "python-ta"
     },
-    "publisher": "<david-yz-liu>",
+    "publisher": "david-yz-liu",
     "license": "MIT",
     "homepage": "https://github.com/pyta-uoft/python-ta-vscode-extension",
     "repository": {
