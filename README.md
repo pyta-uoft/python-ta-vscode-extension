@@ -53,6 +53,29 @@ it as `xvfb-run -a pnpm test`.
 Both test suites also run automatically in CI on every pull request and push to `main`; see
 `.github/workflows/test.yml`.
 
+#### Coverage
+
+Coverage is opt-in and not part of the default test commands above. Both sides write their
+reports under a single `.coverage/` directory (gitignored).
+
+For Python, add `--cov` to the normal `pytest` invocation, e.g.
+`uv run pytest src/test/python_tests --cov=bundled/tool --cov-report=term-missing` (add
+`--cov-report=html` for an HTML report at `.coverage/python/html/index.html`). This also measures
+coverage inside the LSP server subprocess that the test client spawns, not just the test process
+itself.
+
+For the extension's TypeScript tests, run `pnpm run test:coverage`. This runs the same suite as
+`pnpm test` under [c8](https://github.com/bcoe/c8) and writes a report to
+`.coverage/typescript/reports/index.html` (a text summary is also printed to the console).
+
+In CI, both suites run with coverage enabled and upload their results to
+[Coveralls](https://coveralls.io) as a single combined build (one job per language, reported
+under separate flags, merged in a final job); see `.github/workflows/test.yml`. This requires the
+repository to be enabled on Coveralls; no extra secrets are needed for public GitHub repos using
+Coveralls' GitHub App integration, but a private repo (or one not using that integration) will
+need a `COVERALLS_REPO_TOKEN` secret set and passed via `github-token:`/`repo-token:` in the
+workflow.
+
 ## Linting
 
 To lint the Typescript code, run `pnpm run lint`.

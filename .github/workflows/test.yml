@@ -30,7 +30,18 @@ jobs:
         run: uv sync
 
       - name: Run Python tests
-        run: uv run pytest src/test/python_tests -v
+        run: uv run pytest src/test/python_tests -v --cov=bundled/tool --cov-report=term-missing
+
+      - name: Generate Python coverage LCOV report
+        run: uv run coverage lcov
+
+      - name: Report Python coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: python
+          format: lcov
+          file: .coverage/python/lcov.info
+          parallel: true
 
   extension-tests:
     name: Extension (TypeScript) tests
@@ -66,5 +77,24 @@ jobs:
 
       - name: Run extension tests
         # @vscode/test-electron launches a real (headless) VS Code instance,
-        # which needs a virtual display on Linux runners.
-        run: xvfb-run -a pnpm test
+        # which needs a virtual display on Linux runners. test:coverage runs
+        # the same suite as `pnpm test`, instrumented with c8.
+        run: xvfb-run -a pnpm run test:coverage
+
+      - name: Report TypeScript coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: typescript
+          format: lcov
+          file: .coverage/typescript/reports/lcov.info
+          parallel: true
+
+  coveralls-finish:
+    name: Finish Coveralls build
+    needs: [python-tests, extension-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true

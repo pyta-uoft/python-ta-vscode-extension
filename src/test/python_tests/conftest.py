@@ -15,3 +15,18 @@ for _sub_dir in ("libs", "tool"):
     _dir = os.fspath(_PROJECT_ROOT / "bundled" / _sub_dir)
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
+
+
+def pytest_configure(config):
+    """When pytest-cov's `--cov` is passed, also measure coverage inside the
+    LSP server subprocess the test client spawns (session.py's LspSession),
+    since most of lsp_server.py only runs there, not in-process.
+
+    coverage.py auto-starts itself in a subprocess when COVERAGE_PROCESS_START is set.
+    WITH_COVERAGE switches that same subprocess spawn to use `shell=True`, which coverage.py's
+    subprocess measurement needs to work here.
+    See https://coverage.readthedocs.io/en/latest/subprocess.html
+    """
+    if config.getoption("cov_source", default=None):
+        os.environ.setdefault("COVERAGE_PROCESS_START", os.fspath(_PROJECT_ROOT / "pyproject.toml"))
+        os.environ.setdefault("WITH_COVERAGE", "1")
