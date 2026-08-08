@@ -56,8 +56,8 @@ class LspSession(MethodDispatcher):
             shell="WITH_COVERAGE" in os.environ,
         )
 
-        self._writer = JsonRpcStreamWriter(os.fdopen(self._sub.stdin.fileno(), "wb"))
-        self._reader = JsonRpcStreamReader(os.fdopen(self._sub.stdout.fileno(), "rb"))
+        self._writer = JsonRpcStreamWriter(self._sub.stdin)
+        self._reader = JsonRpcStreamReader(self._sub.stdout)
 
         dispatcher = {
             PUBLISH_DIAGNOSTICS: self._publish_diagnostics,
