@@ -10,7 +10,7 @@ from threading import Event
 
 from .lsp_test_client import constants, defaults, session, utils
 
-TIMEOUT = 10  # seconds
+TIMEOUT = 30  # seconds
 
 
 def _make_notebook_uri(notebook_path: str) -> str:

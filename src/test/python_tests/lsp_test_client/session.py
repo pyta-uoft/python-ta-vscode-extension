@@ -15,7 +15,8 @@ from pyls_jsonrpc.streams import JsonRpcStreamReader, JsonRpcStreamWriter
 from .constants import PROJECT_ROOT
 from .defaults import VSCODE_DEFAULT_INITIALIZE
 
-LSP_EXIT_TIMEOUT = 5000
+LSP_EXIT_TIMEOUT = 30  # seconds
+LSP_INITIALIZE_TIMEOUT = 30  # seconds
 
 
 PUBLISH_DIAGNOSTICS = "textDocument/publishDiagnostics"
@@ -41,10 +42,7 @@ class LspSession(MethodDispatcher):
         )
 
     def __enter__(self):
-        """Context manager entrypoint.
-
-        shell=True needed for pytest-cov to work in subprocess.
-        """
+        """Context manager entrypoint."""
         # pylint: disable=consider-using-with
         self._sub = subprocess.Popen(
             [sys.executable, str(self.script)],
@@ -53,7 +51,6 @@ class LspSession(MethodDispatcher):
             bufsize=0,
             cwd=self.cwd,
             env=os.environ,
-            shell="WITH_COVERAGE" in os.environ,
         )
 
         self._writer = JsonRpcStreamWriter(self._sub.stdin)
@@ -81,6 +78,7 @@ class LspSession(MethodDispatcher):
         self,
         initialize_params=None,
         process_server_capabilities=None,
+        timeout=LSP_INITIALIZE_TIMEOUT,
     ):
         """Sends the initialize request to LSP server."""
         if initialize_params is None:
@@ -103,7 +101,10 @@ class LspSession(MethodDispatcher):
             handle_response=_after_initialize,
         )
 
-        server_initialized.wait()
+        if not server_initialized.wait(timeout):
+            raise TimeoutError(
+                f"LSP server did not respond to 'initialize' within {timeout} seconds"
+            )
 
     def initialized(self, initialized_params=None):
         """Sends the initialized notification to LSP server."""

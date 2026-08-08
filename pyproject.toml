@@ -15,4 +15,29 @@ dev = [
     "pytest",
     "PyHamcrest",
     "python-jsonrpc-server",
+    "pytest-cov>=7.1.0",
 ]
+
+[tool.coverage.run]
+# The extension's actual Python source; test code itself is excluded.
+source = ["bundled/tool"]
+# lsp_server.py runs as a subprocess spawned by the LSP test client
+# (see src/test/python_tests/lsp_test_client/session.py), so each process
+# needs its own data file; `parallel = true` gives each one a unique suffix
+# and `coverage combine` (run automatically by pytest-cov) merges them.
+parallel = true
+relative_files = true
+# Keep coverage output next to the TypeScript side's, under .coverage/.
+data_file = ".coverage/python/data"
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+
+[tool.coverage.html]
+directory = ".coverage/python/html"
+
+[tool.coverage.lcov]
+# LCOV report, for uploading to coveralls.io in CI (`coverage lcov`) -- the
+# same format the TypeScript side's c8 output uses.
+output = ".coverage/python/lcov.info"

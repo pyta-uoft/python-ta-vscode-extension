@@ -10,3 +10,6 @@ bundled/libs/
 **/__pycache__
 **/.pytest_cache
 **/.vs
+
+# Coverage output (opt-in, see `pnpm run test:coverage` / `pytest --cov`)
+.coverage/

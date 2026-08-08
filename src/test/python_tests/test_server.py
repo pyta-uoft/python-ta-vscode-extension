@@ -10,7 +10,7 @@ from .lsp_test_client import constants, defaults, session, utils
 
 TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.py"
 TEST_FILE_URI = utils.as_uri(str(TEST_FILE_PATH))
-TIMEOUT = 10  # 10 seconds
+TIMEOUT = 30  # seconds
 
 
 def test_linting_example():
