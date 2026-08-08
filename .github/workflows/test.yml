@@ -1,0 +1,70 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-tests:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          python-version: '3.13'
+
+      - name: Install extension's bundled Python dependencies
+        run: uv pip install --target bundled/libs -r pyproject.toml
+
+      - name: Install dev dependencies
+        run: uv sync
+
+      - name: Run Python tests
+        run: uv run pytest src/test/python_tests -v
+
+  extension-tests:
+    name: Extension (TypeScript) tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Check formatting
+        run: pnpm run format-check
+
+      - name: Compile extension
+        run: pnpm run compile
+
+      - name: Compile tests
+        run: pnpm run compile-tests
+
+      - name: Run extension tests
+        # @vscode/test-electron launches a real (headless) VS Code instance,
+        # which needs a virtual display on Linux runners.
+        run: xvfb-run -a pnpm test

@@ -10,7 +10,6 @@ from .lsp_test_client import constants, defaults, session, utils
 
 TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.py"
 TEST_FILE_URI = utils.as_uri(str(TEST_FILE_PATH))
-SERVER_INFO = utils.get_server_info_defaults()
 TIMEOUT = 10  # 10 seconds
 
 
@@ -45,45 +44,70 @@ def test_linting_example():
         # wait for some time to receive all notifications
         done.wait(TIMEOUT)
 
-        # TODO: Add your linter specific diagnostic result here
+        # Note: Diagnostics come from python-ta's `pyta-lsp` JSON output, so
+        # `source` is "python-ta" rather than the extension/server display name.
         expected = {
             "uri": TEST_FILE_URI,
             "diagnostics": [
                 {
-                    # "range": {
-                    #     "start": {"line": 0, "character": 0},
-                    #     "end": {"line": 0, "character": 0},
-                    # },
-                    # "message": "Missing module docstring",
-                    # "severity": 3,
-                    # "code": "C0114:missing-module-docstring",
-                    "source": SERVER_INFO["name"],
+                    "range": {
+                        "start": {"line": 0, "character": 0},
+                        "end": {"line": 2, "character": 8},
+                    },
+                    "message": "Missing module docstring",
+                    "severity": 3,
+                    "code": "C0114",
+                    "source": "python-ta",
                 },
                 {
-                    # "range": {
-                    #     "start": {"line": 2, "character": 6},
-                    #     "end": {
-                    #         "line": 2,
-                    #         "character": 7,
-                    #     },
-                    # },
-                    # "message": "Undefined variable 'x'",
-                    # "severity": 1,
-                    # "code": "E0602:undefined-variable",
-                    "source": SERVER_INFO["name"],
+                    "range": {
+                        "start": {"line": 2, "character": 0},
+                        "end": {"line": 2, "character": 8},
+                    },
+                    "message": "Forbidden top-level code found on line 3",
+                    "severity": 1,
+                    "code": "E9992",
+                    "source": "python-ta",
                 },
                 {
-                    # "range": {
-                    #     "start": {"line": 0, "character": 0},
-                    #     "end": {
-                    #         "line": 0,
-                    #         "character": 10,
-                    #     },
-                    # },
-                    # "message": "Unused import sys",
-                    # "severity": 2,
-                    # "code": "W0611:unused-import",
-                    "source": SERVER_INFO["name"],
+                    "range": {
+                        "start": {"line": 0, "character": 0},
+                        "end": {"line": 0, "character": 10},
+                    },
+                    "message": "You may not import module sys.",
+                    "severity": 1,
+                    "code": "E9999",
+                    "source": "python-ta",
+                },
+                {
+                    "range": {
+                        "start": {"line": 2, "character": 0},
+                        "end": {"line": 2, "character": 8},
+                    },
+                    "message": "Used input/output function print",
+                    "severity": 1,
+                    "code": "E9998",
+                    "source": "python-ta",
+                },
+                {
+                    "range": {
+                        "start": {"line": 2, "character": 6},
+                        "end": {"line": 2, "character": 7},
+                    },
+                    "message": "Undefined variable 'x'",
+                    "severity": 1,
+                    "code": "E0602",
+                    "source": "python-ta",
+                },
+                {
+                    "range": {
+                        "start": {"line": 0, "character": 0},
+                        "end": {"line": 0, "character": 10},
+                    },
+                    "message": "The import import sys is unused, and so can be removed.",
+                    "severity": 2,
+                    "code": "W0611",
+                    "source": "python-ta",
                 },
             ],
         }
@@ -91,46 +115,42 @@ def test_linting_example():
     assert_that(actual, is_(expected))
 
 
-def test_formatting_example():
-    """Test formatting a python file."""
-    FORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.py"
-    UNFORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.unformatted"
-
-    contents = UNFORMATTED_TEST_FILE_PATH.read_text()
-    lines = contents.splitlines(keepends=False)
+def test_linting_clears_on_close():
+    """Diagnostics are cleared (empty list) when a linted file is closed."""
+    contents = TEST_FILE_PATH.read_text()
 
     actual = []
-    with utils.PythonFile(contents, UNFORMATTED_TEST_FILE_PATH.parent) as pf:
-        uri = utils.as_uri(str(pf.fullpath))
+    with session.LspSession() as ls_session:
+        ls_session.initialize(defaults.VSCODE_DEFAULT_INITIALIZE)
 
-        with session.LspSession() as ls_session:
-            ls_session.initialize()
-            ls_session.notify_did_open(
-                {
-                    "textDocument": {
-                        "uri": uri,
-                        "languageId": "python",
-                        "version": 1,
-                        "text": contents,
-                    }
+        opened = Event()
+        closed = Event()
+
+        def _handler(params):
+            nonlocal actual
+            actual = params
+            if params.get("diagnostics") == []:
+                closed.set()
+            else:
+                opened.set()
+
+        ls_session.set_notification_callback(session.PUBLISH_DIAGNOSTICS, _handler)
+
+        ls_session.notify_did_open(
+            {
+                "textDocument": {
+                    "uri": TEST_FILE_URI,
+                    "languageId": "python",
+                    "version": 1,
+                    "text": contents,
                 }
-            )
-            actual = ls_session.text_document_formatting(
-                {
-                    "textDocument": {"uri": uri},
-                    # `options` is not used by black
-                    "options": {"tabSize": 4, "insertSpaces": True},
-                }
-            )
+            }
+        )
+        opened.wait(TIMEOUT)
 
-    expected = [
-        {
-            "range": {
-                "start": {"line": 0, "character": 0},
-                "end": {"line": len(lines), "character": 0},
-            },
-            "newText": FORMATTED_TEST_FILE_PATH.read_text(),
-        }
-    ]
+        ls_session.notify_did_close(
+            {"textDocument": {"uri": TEST_FILE_URI}}
+        )
+        closed.wait(TIMEOUT)
 
-    assert_that(actual, is_(expected))
+    assert_that(actual, is_({"uri": TEST_FILE_URI, "diagnostics": []}))

@@ -42,9 +42,7 @@ export async function initializePython(disposables: Disposable[]): Promise<void>
             disposables.push(
                 envsApi.onDidChangeEnvironment((e) => {
                     onDidChangePythonInterpreterEvent.fire({
-                        path: e.new
-                            ? [e.new.execInfo.run.executable]
-                            : undefined,
+                        path: e.new ? [e.new.execInfo.run.executable] : undefined,
                         resource: e.uri,
                     });
                 }),

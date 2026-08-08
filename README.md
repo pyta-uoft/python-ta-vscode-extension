@@ -42,7 +42,16 @@ If you want to avoid this during testing, and you do not need breakpoints, launc
 
 ### Running tests
 
-To run the Python tests, run `uv run pytest src/test/python_tests`.
+To run the Python (language server) tests, run `uv run pytest src/test/python_tests`.
+
+To run the extension's TypeScript tests, run `pnpm test`. This compiles the extension and its
+tests, downloads a copy of VS Code (cached under `.vscode-test/` after the first run), installs
+the `ms-python.python` extension dependency into that test profile, and runs the suite in a real
+(headless-capable) Extension Development Host. On Linux, this requires a display server, e.g. run
+it as `xvfb-run -a pnpm test`.
+
+Both test suites also run automatically in CI on every pull request and push to `main`; see
+`.github/workflows/test.yml`.
 
 ## Linting
 
