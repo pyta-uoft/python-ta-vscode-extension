@@ -935,8 +935,8 @@ wheels = [
 
 [[package]]
 name = "python-ta"
-version = "2.13.0.dev0"
-source = { git = "https://github.com/pyta-uoft/pyta.git?subdirectory=packages%2Fpython-ta#cceaceccc762b64bc660b63b77f4cf8dcae21f58" }
+version = "2.13.1"
+source = { git = "https://github.com/pyta-uoft/pyta.git?subdirectory=packages%2Fpython-ta#c3f88cc7bd2c565e2076ae2b1e9f433e418d5b79" }
 dependencies = [
     { name = "aiohttp" },
     { name = "astroid" },
