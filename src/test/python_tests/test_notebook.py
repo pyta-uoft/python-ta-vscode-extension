@@ -353,10 +353,7 @@ def test_notebook_did_change_new_cell_kind_filter():
 
 
 def test_notebook_did_close():
-    """Diagnostics are cleared for all cells when a notebook is closed.
-
-    TODO: Update the expected diagnostics to match your tool's output.
-    """
+    """Diagnostics are cleared for all cells when a notebook is closed."""
     nb_path = str(constants.TEST_DATA / "sample1" / "sample.ipynb")
     nb_uri = _make_notebook_uri(nb_path)
     cell_id = "cell1"
@@ -399,7 +396,8 @@ def test_notebook_did_close():
 
         def _handler(params):
             received.append(params)
-            done.set()
+            if params.get("uri") == cell_uri and params.get("diagnostics") == []:
+                done.set()
 
         ls_session.set_notification_callback(session.PUBLISH_DIAGNOSTICS, _handler)
 
@@ -415,7 +413,7 @@ def test_notebook_did_close():
             }
         )
 
-        done.wait(TIMEOUT)
+        assert done.wait(TIMEOUT), "Timed out waiting for diagnostics to clear"
 
         # Diagnostics should be cleared (empty list) for the cell URI
         assert any(

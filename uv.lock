@@ -935,8 +935,8 @@ wheels = [
 
 [[package]]
 name = "python-ta"
-version = "2.13.0.dev0"
-source = { git = "https://github.com/pyta-uoft/pyta.git?subdirectory=packages%2Fpython-ta#cceaceccc762b64bc660b63b77f4cf8dcae21f58" }
+version = "2.13.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "astroid" },
@@ -957,6 +957,10 @@ dependencies = [
     { name = "toml" },
     { name = "typeguard" },
     { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0e/1a/2eaefec183f1aea012e3f45145897a5f7c44e240bc3c606bdc6a95cc71e2/python_ta-2.13.1.tar.gz", hash = "sha256:2d04f2d3495810999d100fc5f20f6377b983f3eb5070704b6fe6b18c65744ad8", size = 989317, upload-time = "2026-08-12T17:29:55.626Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c4/d2/57415e03e02e69b60c52d02ea12b0e2d4da7df3d3a0e24e4aa101edbbdfd/python_ta-2.13.1-py3-none-any.whl", hash = "sha256:8d58c4f5b2b55d3be514e40e5ec5a8cda488e5e62b832f7df7878b98c64c79ac", size = 1919704, upload-time = "2026-08-12T17:29:52.634Z" },
 ]
 
 [[package]]
@@ -980,7 +984,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "pygls", specifier = ">=2.1.1" },
-    { name = "python-ta", git = "https://github.com/pyta-uoft/pyta.git?subdirectory=packages%2Fpython-ta" },
+    { name = "python-ta", specifier = "==2.13.1" },
 ]
 
 [package.metadata.requires-dev]

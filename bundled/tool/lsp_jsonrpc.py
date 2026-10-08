@@ -224,7 +224,7 @@ def run_over_json_rpc(
         "useStdin": use_stdin,
         "cwd": cwd,
     }
-    if source:
+    if source is not None:
         msg["source"] = source
 
     rpc.send_data(msg)

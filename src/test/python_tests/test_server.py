@@ -115,6 +115,91 @@ def test_linting_example():
     assert_that(actual, is_(expected))
 
 
+def test_linting_uses_document_contents_from_stdin():
+    """Lint the editor contents instead of the file contents on disk."""
+    contents = "print(buffer_only_name)\n"
+
+    actual = []
+    with session.LspSession() as ls_session:
+        ls_session.initialize(defaults.VSCODE_DEFAULT_INITIALIZE)
+
+        done = Event()
+
+        def _handler(params):
+            nonlocal actual
+            actual = params
+            done.set()
+
+        ls_session.set_notification_callback(
+            session.PUBLISH_DIAGNOSTICS, _handler
+        )
+
+        ls_session.notify_did_open(
+            {
+                "textDocument": {
+                    "uri": TEST_FILE_URI,
+                    "languageId": "python",
+                    "version": 1,
+                    "text": contents,
+                }
+            }
+        )
+
+        assert done.wait(TIMEOUT), "Timed out waiting for diagnostics"
+
+    assert actual["uri"] == TEST_FILE_URI
+    assert any(
+        diagnostic.get("code") == "E0602"
+        and diagnostic.get("message")
+        == "Undefined variable 'buffer_only_name'"
+        for diagnostic in actual["diagnostics"]
+    )
+
+
+def test_linting_normalizes_crlf_stdin_contents():
+    """Normalize Windows line endings before linting document contents."""
+    contents = "print(crlf_only_name)\r\n"
+
+    actual = []
+    with session.LspSession() as ls_session:
+        ls_session.initialize(defaults.VSCODE_DEFAULT_INITIALIZE)
+
+        done = Event()
+
+        def _handler(params):
+            nonlocal actual
+            actual = params
+            done.set()
+
+        ls_session.set_notification_callback(
+            session.PUBLISH_DIAGNOSTICS, _handler
+        )
+
+        ls_session.notify_did_open(
+            {
+                "textDocument": {
+                    "uri": TEST_FILE_URI,
+                    "languageId": "python",
+                    "version": 1,
+                    "text": contents,
+                }
+            }
+        )
+
+        assert done.wait(TIMEOUT), "Timed out waiting for diagnostics"
+
+    assert any(
+        diagnostic.get("code") == "E0602"
+        and diagnostic.get("message")
+        == "Undefined variable 'crlf_only_name'"
+        for diagnostic in actual["diagnostics"]
+    )
+    assert not any(
+        "U+000D" in diagnostic.get("message", "")
+        for diagnostic in actual["diagnostics"]
+    )
+
+
 def test_linting_clears_on_close():
     """Diagnostics are cleared (empty list) when a linted file is closed."""
     contents = TEST_FILE_PATH.read_text()

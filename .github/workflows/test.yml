@@ -12,8 +12,12 @@ concurrency:
 
 jobs:
   python-tests:
-    name: Python tests
-    runs-on: ubuntu-latest
+    name: Python tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     # Safety net: fail fast instead of burning the default 6h runner budget
     # if a test ever hangs (e.g. a stuck subprocess) rather than failing.
     timeout-minutes: 15
@@ -33,12 +37,19 @@ jobs:
         run: uv sync
 
       - name: Run Python tests
+        if: runner.os == 'Windows'
+        run: uv run pytest src/test/python_tests -v
+
+      - name: Run Python tests with coverage
+        if: runner.os == 'Linux'
         run: uv run pytest src/test/python_tests -v --cov=bundled/tool --cov-report=term-missing
 
       - name: Generate Python coverage LCOV report
+        if: runner.os == 'Linux'
         run: uv run coverage lcov
 
       - name: Report Python coverage to Coveralls
+        if: runner.os == 'Linux'
         uses: coverallsapp/github-action@v2
         with:
           flag-name: python

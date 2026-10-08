@@ -50,6 +50,23 @@ def test_get_document_path_notebook_cell_uri_strips_scheme_and_fragment():
 
 
 # ---------------------------------------------------------------------------
+# _normalize_source
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("line1\r\nline2\r\n", "line1\nline2\n"),
+        ("line1\rline2\r", "line1\nline2\n"),
+        ("line1\nline2\n", "line1\nline2\n"),
+    ],
+)
+def test_normalize_source_line_endings(source, expected):
+    assert lsp_server._normalize_source(source) == expected
+
+
+# ---------------------------------------------------------------------------
 # _parse_json_output
 # ---------------------------------------------------------------------------
 
@@ -86,6 +103,22 @@ def test_parse_json_output_returns_diagnostics_for_matching_uri():
     assert diagnostic.code == "E0001"
     assert diagnostic.source == "python-ta"
     assert diagnostic.severity == lsp.DiagnosticSeverity.Error
+
+
+def test_parse_json_output_returns_stdin_diagnostics_despite_temporary_uri():
+    payload = _make_payload()
+    payload[0]["uri"] = "file:///tmp/stdin_abc123.py"
+    content = json.dumps(payload[:1])
+
+    result = lsp_server._parse_json_output(
+        content,
+        "file:///home/user/project/foo.py",
+        use_stdin=True,
+    )
+
+    assert len(result) == 1
+    assert result[0].message == "msg"
+    assert result[0].code == "E0001"
 
 
 def test_parse_json_output_ignores_leading_log_lines():

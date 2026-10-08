@@ -10,6 +10,7 @@
 
 - Implement initial PythonTA LSP server
 - Add initial PythonTA implementation that simply calls the CLI
+- Lint Python documents from their editor contents through standard input
 
 ### 🐛 Bug fixes
 

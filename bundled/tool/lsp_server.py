@@ -232,18 +232,19 @@ def _get_document_path(document: workspace.Document) -> str:
     return uris.to_fs_path(document.uri)
 
 
+def _normalize_source(source: str) -> str:
+    """Normalize document line endings before sending source through stdin."""
+    return source.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
-    # TODO: Determine if your tool supports passing file content via stdin.
-    # If you want to support linting on change then your tool will need to
-    # support linting over stdin to be effective. Read, and update
-    # _run_tool_on_document and _run_tool functions as needed for your project.
-    result = _run_tool_on_document(document)
+    result = _run_tool_on_document(document, use_stdin=True)
     if result and result.stdout:
-        return _parse_json_output(result.stdout, document.uri)
+        return _parse_json_output(result.stdout, document.uri, use_stdin=True)
     return []
 
 
-def _parse_json_output(content: str, doc_uri: str) -> list[lsp.Diagnostic]:
+def _parse_json_output(content: str, doc_uri: str, use_stdin: bool = False) -> list[lsp.Diagnostic]:
     """Parses PythonTA's JSON output and maps it to LSP Diagnostics."""
     json_start = content.find("[")
     if json_start == -1:
@@ -252,11 +253,16 @@ def _parse_json_output(content: str, doc_uri: str) -> list[lsp.Diagnostic]:
 
     raw_results = json.loads(content)
     diagnostics_data = []
-    for file_result in raw_results:
-        file_uri = file_result.get("uri")
-        if file_uri and _normalize_uri_path(file_uri) == _normalize_uri_path(doc_uri):
-            diagnostics_data = file_result.get("diagnostics", [])
-            break
+
+    if use_stdin:
+        if raw_results:
+            diagnostics_data = raw_results[0].get("diagnostics", [])
+    else:
+        for file_result in raw_results:
+            file_uri = file_result.get("uri")
+            if file_uri and _normalize_uri_path(file_uri) == _normalize_uri_path(doc_uri):
+                diagnostics_data = file_result.get("diagnostics", [])
+                break
 
     for diag in diagnostics_data:
         if "severity" in diag and isinstance(diag["severity"], int):
@@ -472,6 +478,7 @@ def _run_tool_on_document(
         # TODO: Decide on if you want to skip standard library files.
         # Skip standard library python files.
         return None
+    source = _normalize_source(document.source)
 
     # deep copy here to prevent accidentally updating global settings.
     settings = copy.deepcopy(_get_settings_by_document(document))
@@ -505,17 +512,7 @@ def _run_tool_on_document(
         argv += ["--config", config_path]
 
     if use_stdin:
-        # TODO: update these to pass the appropriate arguments to provide document contents
-        # to tool via stdin.
-        # For example, for pylint args for stdin looks like this:
-        #     pylint --from-stdin <path>
-        # Here `--from-stdin` path is used by pylint to make decisions on the file contents
-        # that are being processed. Like, applying exclusion rules.
-        # It should look like this when you pass it:
-        #     argv += ["--from-stdin", document.path]
-        # Read up on how your tool handles contents via stdin. If stdin is not supported use
-        # set use_stdin to False, or provide path, what ever is appropriate for your tool.
-        argv += []
+        argv += ["--stdin"]
     else:
         argv += [document_path]
 
@@ -527,7 +524,7 @@ def _run_tool_on_document(
             argv=argv,
             use_stdin=use_stdin,
             cwd=cwd,
-            source=document.source.replace("\r\n", "\n"),
+            source=source,
         )
         if result.stderr:
             log_to_output(result.stderr)
@@ -544,7 +541,7 @@ def _run_tool_on_document(
             argv=argv,
             use_stdin=use_stdin,
             cwd=cwd,
-            source=document.source,
+            source=source,
         )
         if result.exception:
             log_error(result.exception)
@@ -569,7 +566,7 @@ def _run_tool_on_document(
                     argv=argv,
                     use_stdin=use_stdin,
                     cwd=cwd,
-                    source=document.source,
+                    source=source,
                 )
             except Exception:
                 log_error(traceback.format_exc(chain=True))
