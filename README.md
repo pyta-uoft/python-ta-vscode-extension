@@ -10,6 +10,10 @@ The extension checks for `.pylintrc`, `pylintrc`, and `pyproject.toml`, in that 
 When project-root configuration discovery is enabled, `python-ta.configPath` is ignored. 
 When discovery is disabled, `python-ta.configPath` specifies the configuration file instead.
 
+The extension runs PythonTA with its LSP reporter and expects standard output to contain a complete
+JSON document. PythonTA error output and JSON parsing errors are available in the
+**PythonTA VS Code Extension** output channel.
+
 ## Developers
 
 ### Requirements

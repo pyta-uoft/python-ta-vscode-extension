@@ -121,10 +121,15 @@ def test_parse_json_output_returns_stdin_diagnostics_despite_temporary_uri():
     assert result[0].code == "E0001"
 
 
-def test_parse_json_output_ignores_leading_log_lines():
+def test_parse_json_output_rejects_leading_log_lines(monkeypatch):
+    errors = []
+    monkeypatch.setattr(lsp_server, "log_error", errors.append)
     content = "some log preamble\nmore logs\n" + json.dumps(_make_payload())
     result = lsp_server._parse_json_output(content, "file:///home/user/project/foo.py")
-    assert len(result) == 1
+
+    assert result == []
+    assert len(errors) == 1
+    assert "Failed to parse PythonTA output as JSON" in errors[0]
 
 
 def test_parse_json_output_returns_empty_list_for_unmatched_uri():
@@ -133,8 +138,12 @@ def test_parse_json_output_returns_empty_list_for_unmatched_uri():
     assert result == []
 
 
-def test_parse_json_output_returns_empty_list_when_no_json_array_present():
+def test_parse_json_output_reports_invalid_json(monkeypatch):
+    errors = []
+    monkeypatch.setattr(lsp_server, "log_error", errors.append)
+
     assert lsp_server._parse_json_output("no json here", "file:///x.py") == []
+    assert len(errors) == 1
 
 
 def test_parse_json_output_returns_empty_list_for_file_with_no_diagnostics():
