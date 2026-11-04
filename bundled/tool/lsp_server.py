@@ -247,12 +247,12 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
 
 def _parse_json_output(content: str, doc_uri: str, use_stdin: bool = False) -> list[lsp.Diagnostic]:
     """Parses PythonTA's JSON output and maps it to LSP Diagnostics."""
-    json_start = content.find("[")
-    if json_start == -1:
+    try:
+        raw_results = json.loads(content)
+    except json.JSONDecodeError as error:
+        log_error(f"Failed to parse PythonTA output as JSON: {error}")
         return []
-    content = content[json_start:]
 
-    raw_results = json.loads(content)
     diagnostics_data = []
 
     if use_stdin:

@@ -17,6 +17,7 @@
 
 - Updated publisher name from `<david-yz-liu>` to `david-yz-liu`
 - Fixed `substitute_attr` in the bundled language server not restoring the original value when the wrapped code raised an exception
+- Parse PythonTA's complete standard output as JSON and log an error when the output is malformed.
 
 ### 🔧 Internal changes
 
