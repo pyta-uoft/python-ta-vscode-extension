@@ -75,6 +75,15 @@ jobs:
           node-version: '24'
           cache: 'pnpm'
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          python-version: '3.13'
+
+      - name: Install extension's bundled Python dependencies
+        run: uv pip install --target bundled/libs -r pyproject.toml
+
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile
 
@@ -113,3 +122,6 @@ jobs:
       - uses: coverallsapp/github-action@v2
         with:
           parallel-finished: true
+          # Avoid comparing a partial aggregate with the complete baseline when
+          # one test job fails before uploading its language-specific results.
+          carryforward: 'python,typescript'

@@ -25,3 +25,5 @@
 - Improved test infrastructure: fixed and expanded Python tests, added Typescript extension tests (using Mocha + `@vscode/test-electron`), and added GitHub Actions workflow to run tests
 - Removed unused glob pattern `'build/**/*.yml'` from `package.json` `format-check` command
 - Added test coverage tracking
+- Stabilized aggregate coverage reporting when a language-specific report is unavailable
+- Stabilized TypeScript coverage by waiting for an end-to-end PythonTA diagnostic
