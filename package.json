@@ -64,7 +64,7 @@
         "test": "node ./out/test/runTest.js",
         "pretest:coverage": "pnpm run compile-tests",
         "test:coverage": "node scripts/run-coverage.js",
-        "vsce-package": "vsce package -o python-ta.vsix"
+        "vsce-package": "vsce package --no-dependencies -o python-ta.vsix"
     },
     "contributes": {
         "configuration": {
