@@ -27,3 +27,5 @@
 - Added test coverage tracking
 - Stabilized aggregate coverage reporting when a language-specific report is unavailable
 - Stabilized TypeScript coverage by waiting for an end-to-end PythonTA diagnostic
+- Fixed `vsce-package` script failing under pnpm by passing `--no-dependencies`, since dependencies are bundled by webpack
+- Excluded development-only files (e.g., `.claude/`, `.mypy_cache/`, lockfiles, `scripts/`) from the packaged extension

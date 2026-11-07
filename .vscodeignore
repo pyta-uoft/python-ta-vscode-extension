@@ -24,3 +24,12 @@ noxfile.py
 **/requirements.in
 **/tool/_debug_server.py
 media/**
+.claude/**
+.mypy_cache/**
+scripts/**
+eslint.config.js
+pnpm-lock.yaml
+pnpm-workspace.yaml
+pyproject.toml
+uv.lock
+.python-version
