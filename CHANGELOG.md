@@ -30,3 +30,4 @@
 - Fixed `vsce-package` script failing under pnpm by passing `--no-dependencies`, since dependencies are bundled by webpack
 - Excluded development-only files (e.g., `.claude/`, `.mypy_cache/`, lockfiles, `scripts/`) from the packaged extension
 - Stabilized TypeScript coverage by testing the language client stop-failure path directly
+- Fixed flaky settings tests by waiting only for the configuration change each test makes

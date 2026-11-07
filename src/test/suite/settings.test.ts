@@ -4,6 +4,22 @@ import { checkIfConfigurationChanged, getGlobalSettings } from '../../common/set
 
 const NAMESPACE = 'python-ta';
 
+/**
+ * Resolves with the first configuration change event that affects `section`.
+ * Unrelated changes (e.g. other extensions updating settings while they activate)
+ * are ignored, so the test sees the event caused by its own update.
+ */
+function waitForConfigurationChange(section: string): Promise<vscode.ConfigurationChangeEvent> {
+    return new Promise((resolve) => {
+        const disposable = vscode.workspace.onDidChangeConfiguration((e) => {
+            if (e.affectsConfiguration(section)) {
+                disposable.dispose();
+                resolve(e);
+            }
+        });
+    });
+}
+
 suite('settings.getGlobalSettings', () => {
     test('returns defaults matching package.json when nothing overridden', async () => {
         const settings = await getGlobalSettings(NAMESPACE, false);
@@ -21,12 +37,7 @@ suite('settings.checkIfConfigurationChanged', () => {
         const config = vscode.workspace.getConfiguration(NAMESPACE);
         const original = config.get<string[]>('args');
 
-        const changed = new Promise<vscode.ConfigurationChangeEvent>((resolve) => {
-            const disposable = vscode.workspace.onDidChangeConfiguration((e) => {
-                disposable.dispose();
-                resolve(e);
-            });
-        });
+        const changed = waitForConfigurationChange(`${NAMESPACE}.args`);
 
         await config.update('args', ['--foo'], vscode.ConfigurationTarget.Global);
         try {
@@ -41,12 +52,7 @@ suite('settings.checkIfConfigurationChanged', () => {
         const config = vscode.workspace.getConfiguration('editor');
         const original = config.get<boolean>('wordWrap');
 
-        const changed = new Promise<vscode.ConfigurationChangeEvent>((resolve) => {
-            const disposable = vscode.workspace.onDidChangeConfiguration((e) => {
-                disposable.dispose();
-                resolve(e);
-            });
-        });
+        const changed = waitForConfigurationChange('editor.wordWrap');
 
         await config.update('wordWrap', 'on', vscode.ConfigurationTarget.Global);
         try {
