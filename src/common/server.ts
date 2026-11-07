@@ -74,6 +74,23 @@ async function createServer(
     return new LanguageClient(serverId, serverName, serverOptions, clientOptions);
 }
 
+/**
+ * Stops the given language client, if any. A failure to stop (e.g. the client is
+ * still starting, or stopping times out) is logged rather than thrown, so that a
+ * restart can proceed with a fresh client.
+ */
+export async function stopServer(lsClient?: LanguageClient): Promise<void> {
+    if (!lsClient) {
+        return;
+    }
+    traceInfo(`Server: Stop requested`);
+    try {
+        await lsClient.stop();
+    } catch (ex) {
+        traceError(`Server: Stop failed: ${ex}`);
+    }
+}
+
 let _disposables: Disposable[] = [];
 export async function restartServer(
     serverId: string,
@@ -81,14 +98,7 @@ export async function restartServer(
     outputChannel: LogOutputChannel,
     lsClient?: LanguageClient,
 ): Promise<LanguageClient | undefined> {
-    if (lsClient) {
-        traceInfo(`Server: Stop requested`);
-        try {
-            await lsClient.stop();
-        } catch (ex) {
-            traceError(`Server: Stop failed: ${ex}`);
-        }
-    }
+    await stopServer(lsClient);
     _disposables.forEach((d) => d.dispose());
     _disposables = [];
     const projectRoot = await getProjectRoot();
